@@ -1,0 +1,70 @@
+/**
+ * @author ius.
+ * @date 2023/8/5
+ * @introduction 获取QQ好友列表and加好友时间
+ */
+function getCookie(aim) {
+    const allText = document.cookie.replace(/\s*/g, ''); //document.cookie
+    oneText = allText.split(";");
+    for (var two of oneText) {
+        const three = two.split("=");
+        if (aim === three[0]) {
+            return two;
+        }
+    }
+}
+
+function getTimeFriend(uin, friendid, gtk) {
+    const url = "https://user.qzone.qq.com/proxy/domain/r.qzone.qq.com/cgi-bin/friendship/cgi_friendship?activeuin=" + uin + "&passiveuin=" + friendid + "&situation=1&isCalendar=1&g_tk=" + gtk + "&g_tk=" + gtk;
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, false);
+    xhr.setRequestHeader("referrerPolicy", "strict-origin-when-cross-origin");
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.withCredentials = true;
+    xhr.send(null);
+
+    if (xhr.status === 200) {
+        const data = xhr.responseText;
+        const jsonDataStr = data.slice(data.indexOf('{'), -2);
+        const jsonData = JSON.parse(jsonDataStr);
+        if (jsonData["code"] === 0) {
+            const timestamp = jsonData["data"]["addFriendTime"];
+            const date = new Date(timestamp * 1000);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const seconds = date.getSeconds();
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+    }
+    return "";
+}
+
+const gtk = user.getToken();
+const uin = getCookie("uin").substring(5);
+const xhr = new XMLHttpRequest();
+const qzonetoken = window.shine0callback;
+var url = 'https://mobile.qzone.qq.com/friend/mfriend_list?qzonetoken=' + qzonetoken + '&g_tk=' + gtk + '&res_uin=' + uin + '&res_type=normal&format=json&count_per_page=10&page_index=0&page_type=0&mayknowuin=&qqmailstat=';
+xhr.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status == 200) {
+        const json = JSON.parse(xhr.responseText)
+        const allGroup = json.data.gpnames;
+        const allFriend = json.data.list;
+        var consoleContext = "";
+        for (var groupid of allGroup) {
+            consoleContext += groupid["gpname"] + ":\n";
+            for (const friendid of allFriend) {
+                if (groupid["gpid"] === friendid["groupid"]) {
+                    const friendDay = getTimeFriend(uin, friendid["uin"], gtk);
+                    consoleContext += "  " + friendid["remark"] + "(" + friendid["uin"] + ")" + friendDay + "\n";
+                }
+            }
+        }
+        console.log(consoleContext);
+    }
+}
+xhr.open('GET', url)
+xhr.withCredentials = true;
+xhr.send()
